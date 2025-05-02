@@ -77,7 +77,7 @@ module tb_tl_no_top;
     );
     
     // Instantiate the stimulus generator
-    tb_tl_stimulus_standalone stimulus (
+    tb_tl_stimulus stimulus (
         .clk                (clk),
         .rst_n              (rst_n),
         
