@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 `include "tl_pkg.vh"
 
-module tb_tl_no_top;
+module tb_tl_top;
 
     // Common signals for DUT
     wire clk;
@@ -145,8 +145,8 @@ module tb_tl_no_top;
     // Initial block for waveform dumping only
     initial begin
         // Dump waveforms
-        $dumpfile("tb_tl_no_top.vcd");
-        $dumpvars(0, tb_tl_no_top);
+        $dumpfile("tb_tl_top.vcd");
+        $dumpvars(0, tb_tl_top);
     end
 
 endmodule 
