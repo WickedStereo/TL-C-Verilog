@@ -3,7 +3,7 @@
 
 // Module for generating stimulus for the TileLink testbench
 // This standalone version also generates clock and reset and controls simulation
-module tb_tl_stimulus_standalone (
+module tb_tl_stimulus (
     // Clock and reset - outputs in this version
     output reg         clk,
     output reg         rst_n,
