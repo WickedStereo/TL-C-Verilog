@@ -105,7 +105,7 @@ module tb_tl_top;
         .clk                (clk),
         .rst_n              (rst_n),
         
-        // TileLink signals from DUT to monitor - L1 side
+        // TileLink signals from DUT to monitor
         .a_valid            (dut.l1_a_valid),
         .a_ready            (dut.l1_a_ready),
         .a_opcode           (dut.l1_a_opcode),
@@ -119,21 +119,6 @@ module tb_tl_top;
         .d_opcode           (dut.l1_d_opcode),
         .d_source           (dut.l1_d_source),
         .d_data             (dut.l1_d_data),
-        
-        // TileLink signals from DUT to monitor - L2 side
-        .l2_a_valid         (dut.l2_a_valid),
-        .l2_a_ready         (dut.l2_a_ready),
-        .l2_a_opcode        (dut.l2_a_opcode),
-        .l2_a_source        (dut.l2_a_source),
-        .l2_a_address       (dut.l2_a_address),
-        .l2_a_mask          (dut.l2_a_mask),
-        .l2_a_data          (dut.l2_a_data),
-        
-        .l2_d_valid         (dut.l2_d_valid),
-        .l2_d_ready         (dut.l2_d_ready),
-        .l2_d_opcode        (dut.l2_d_opcode),
-        .l2_d_source        (dut.l2_d_source),
-        .l2_d_data          (dut.l2_d_data),
         
         // Control signals
         .transaction_done   (transaction_done),
