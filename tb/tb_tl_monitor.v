@@ -25,6 +25,22 @@ module tb_tl_monitor #(
     input [`TL_SOURCE_BITS-1:0]  d_source,
     input [`TL_DATA_BYTES*8-1:0] d_data,
     
+    // Memory monitoring signals
+    input                              mem_write_valid,
+    input [`TL_ADDR_BITS-1:0]          mem_write_addr,
+    input [`TL_DATA_BYTES*8-1:0]       mem_write_data,
+    input [`TL_DATA_BYTES-1:0]         mem_write_mask,
+    
+    input                              mem_read_valid,
+    input [`TL_ADDR_BITS-1:0]          mem_read_addr,
+    input [`TL_DATA_BYTES*8-1:0]       mem_read_data,
+    
+    // Response monitoring signals
+    input                              resp_valid,
+    input [3:0]                        resp_opcode,
+    input [`TL_SOURCE_BITS-1:0]        resp_source,
+    input [`TL_DATA_BYTES*8-1:0]       resp_data,
+    
     // Control signals
     input                        transaction_done,
     input                        test_done,
@@ -44,6 +60,10 @@ module tb_tl_monitor #(
     integer put_partial_ack = 0;
     integer transactions_count = 0;
     integer test_passed = 0;
+    
+    // Memory access counters
+    integer mem_writes = 0;
+    integer mem_reads = 0;
     
     // Local variables for loops and calculations
     integer i;
@@ -178,6 +198,80 @@ module tb_tl_monitor #(
         end
     end
     
+    // Monitor memory write signals
+    always @(posedge clk) begin
+        if (rst_n && mem_write_valid) begin
+            mem_writes = mem_writes + 1;
+            $display("[%0t ns] Monitor: Memory Write (addr=0x%h, data=0x%h, mask=0x%h)", 
+                     $time, mem_write_addr, mem_write_data, mem_write_mask);
+            
+            // Verify memory write matches reference model
+            word_addr = mem_write_addr >> 3;
+            expected_data = ref_model_mem[word_addr];
+            
+            // For full writes, verify data
+            if (mem_write_mask == 8'hFF) begin
+                if (mem_write_data !== expected_data) begin
+                    $display("[%0t ns] Monitor: *** MEMORY WRITE MISMATCH *** addr=0x%h, expected=0x%h, actual=0x%h", 
+                             $time, mem_write_addr, expected_data, mem_write_data);
+                end
+            } 
+            // For partial writes, verify only masked bytes
+            else begin
+                // Create expected data with masked bytes
+                reg [63:0] masked_expected;
+                masked_expected = 64'h0;
+                
+                for (i = 0; i < 8; i = i + 1) begin
+                    if (mem_write_mask[i]) begin
+                        // Check only bytes that are being written
+                        if (mem_write_data[i*8 +: 8] !== expected_data[i*8 +: 8]) begin
+                            $display("[%0t ns] Monitor: *** MEMORY WRITE BYTE %0d MISMATCH *** addr=0x%h, expected=0x%h, actual=0x%h", 
+                                     $time, i, mem_write_addr, expected_data[i*8 +: 8], mem_write_data[i*8 +: 8]);
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    // Monitor memory read signals
+    always @(posedge clk) begin
+        if (rst_n && mem_read_valid) begin
+            mem_reads = mem_reads + 1;
+            $display("[%0t ns] Monitor: Memory Read (addr=0x%h, data=0x%h)", 
+                     $time, mem_read_addr, mem_read_data);
+            
+            // Verify memory read matches reference model
+            word_addr = mem_read_addr >> 3;
+            expected_data = ref_model_mem[word_addr];
+            
+            if (mem_read_data !== expected_data) begin
+                $display("[%0t ns] Monitor: *** MEMORY READ MISMATCH *** addr=0x%h, expected=0x%h, actual=0x%h", 
+                         $time, mem_read_addr, expected_data, mem_read_data);
+            end
+        end
+    end
+    
+    // Monitor response signals
+    always @(posedge clk) begin
+        if (rst_n && resp_valid) begin
+            $display("[%0t ns] Monitor: Response (opcode=0x%h, source=%d, data=0x%h)", 
+                     $time, resp_opcode, resp_source, resp_data);
+            
+            // For data responses, check against reference model
+            if (resp_opcode == `TL_D_ACCESSACKDATA) begin
+                ref_addr = source_address[resp_source];
+                expected_data = ref_model_mem[ref_addr >> 3];
+                
+                if (resp_data !== expected_data) begin
+                    $display("[%0t ns] Monitor: *** RESPONSE DATA MISMATCH *** source=%d, expected=0x%h, actual=0x%h", 
+                             $time, resp_source, expected_data, resp_data);
+                end
+            end
+        end
+    end
+    
     // Report test results
     initial begin
         // Initialize control signals
@@ -196,6 +290,7 @@ module tb_tl_monitor #(
         $display("GET requests sent: %d, ACKs received: %d", get_sent, get_ack);
         $display("PUTFULL requests sent: %d, ACKs received: %d", put_full_sent, put_full_ack);
         $display("PUTPARTIAL requests sent: %d, ACKs received: %d", put_partial_sent, put_partial_ack);
+        $display("Memory writes: %d, Memory reads: %d", mem_writes, mem_reads);
         $display("Total transactions: %d, Verified correct: %d", transactions_count, test_passed);
         
         if ((get_sent == get_ack) && 

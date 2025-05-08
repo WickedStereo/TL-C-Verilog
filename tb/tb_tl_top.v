@@ -120,6 +120,22 @@ module tb_tl_top;
         .d_source           (dut.l1_d_source),
         .d_data             (dut.l1_d_data),
         
+        // Memory monitoring signals
+        .mem_write_valid    (mem_write_valid),
+        .mem_write_addr     (mem_write_addr),
+        .mem_write_data     (mem_write_data),
+        .mem_write_mask     (mem_write_mask),
+        
+        .mem_read_valid     (mem_read_valid),
+        .mem_read_addr      (mem_read_addr),
+        .mem_read_data      (mem_read_data),
+        
+        // Response monitoring signals
+        .resp_valid         (resp_valid),
+        .resp_opcode        (resp_opcode),
+        .resp_source        (resp_source),
+        .resp_data          (resp_data),
+        
         // Control signals
         .transaction_done   (transaction_done),
         .test_done          (test_done),
