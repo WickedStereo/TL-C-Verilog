@@ -100,44 +100,19 @@ module tb_tl_top;
         .all_tests_passed   (all_tests_passed)
     );
     
-    // Instantiate the monitor
+    // Instantiate the simplified monitor
     tb_tl_monitor monitor (
         .clk                (clk),
         .rst_n              (rst_n),
         
-        // TileLink signals from DUT to monitor
-        .a_valid            (dut.l1_a_valid),
-        .a_ready            (dut.l1_a_ready),
-        .a_opcode           (dut.l1_a_opcode),
-        .a_source           (dut.l1_a_source),
-        .a_address          (dut.l1_a_address),
-        .a_mask             (dut.l1_a_mask),
-        .a_data             (dut.l1_a_data),
-        
-        .d_valid            (dut.l1_d_valid),
-        .d_ready            (dut.l1_d_ready),
-        .d_opcode           (dut.l1_d_opcode),
-        .d_source           (dut.l1_d_source),
-        .d_data             (dut.l1_d_data),
-        
-        // Memory monitoring signals
-        .mem_write_valid    (mem_write_valid),
-        .mem_write_addr     (mem_write_addr),
-        .mem_write_data     (mem_write_data),
-        .mem_write_mask     (mem_write_mask),
-        
-        .mem_read_valid     (mem_read_valid),
-        .mem_read_addr      (mem_read_addr),
-        .mem_read_data      (mem_read_data),
-        
-        // Response monitoring signals
-        .resp_valid         (resp_valid),
-        .resp_opcode        (resp_opcode),
-        .resp_source        (resp_source),
-        .resp_data          (resp_data),
+        // Transaction signals
+        .transaction_done   (transaction_done),
+        .transaction_type   (transaction_type),
+        .address            (address),
+        .write_data         (write_data),
+        .read_data          (read_data),
         
         // Control signals
-        .transaction_done   (transaction_done),
         .test_done          (test_done),
         .mem_init_done      (mem_init_done),
         .all_tests_passed   (all_tests_passed)

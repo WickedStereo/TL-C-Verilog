@@ -36,15 +36,15 @@ module tl_top (
 
     // --- Wires connecting L1 adapter to Interconnect Master Port 0 (m0) ---
     // Channel A (L1 -> Interconnect)
-    wire  [2:0]                       l1_a_opcode ;
-    wire  [2:0]                       l1_a_param  ;
-    wire  [`TL_SIZE_BITS-1:0]         l1_a_size   ;
-    wire  [`TL_SOURCE_BITS-1:0]       l1_a_source ;
+    wire  [2:0]                       l1_a_opcode;
+    wire  [2:0]                       l1_a_param;
+    wire  [`TL_SIZE_BITS-1:0]         l1_a_size;
+    wire  [`TL_SOURCE_BITS-1:0]       l1_a_source;
     wire  [`TL_ADDR_BITS-1:0]         l1_a_address;
-    wire  [`TL_DATA_BYTES-1:0]        l1_a_mask   ;
-    wire  [`TL_DATA_BYTES*8-1:0]      l1_a_data   ;
-    wire                              l1_a_valid  ;
-    wire                              l1_a_ready  ;
+    wire  [`TL_DATA_BYTES-1:0]        l1_a_mask;
+    wire  [`TL_DATA_BYTES*8-1:0]      l1_a_data;
+    wire                              l1_a_valid;
+    wire                              l1_a_ready;
     // Channel D (Interconnect -> L1)
     wire         l1_d_valid;
     wire         l1_d_ready;
