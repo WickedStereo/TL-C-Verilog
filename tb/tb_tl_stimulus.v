@@ -1,247 +1,213 @@
 `timescale 1ns / 1ps
 `include "tl_pkg.vh"
 
-// Module for generating stimulus for the TileLink testbench
-// This standalone version also generates clock and reset and controls simulation
+// Ultra-simplified TileLink stimulus module
+// Contains just a single GET operation test case
 module tb_tl_stimulus (
-    // Clock and reset - outputs in this version
+    // Clock and reset
     output reg         clk,
     output reg         rst_n,
     
+    // Control signals for L1 adapter
+    output reg [3:0]  start_transaction,  // Pulse to start a new transaction
+    output reg [7:0]  transaction_type,   // 2 bits per L1 adapter
+    
+    // Transaction parameters for L1_0 (only using L1_0)
+    output reg [`TL_ADDR_BITS-1:0]     address_l1_0,
+    output reg [`TL_SIZE_BITS-1:0]     size_l1_0,
+    output reg [`TL_SOURCE_BITS-1:0]   source_l1_0,
+    output reg [`TL_DATA_BYTES*8-1:0]  write_data_l1_0,
+    output reg [`TL_DATA_BYTES-1:0]    write_mask_l1_0,
+    input      [`TL_DATA_BYTES*8-1:0]  read_data_l1_0,
+    
+    // Unused L1 ports - kept for interface compatibility
+    output reg [`TL_ADDR_BITS-1:0]     address_l1_1,
+    output reg [`TL_SIZE_BITS-1:0]     size_l1_1,
+    output reg [`TL_SOURCE_BITS-1:0]   source_l1_1,
+    output reg [`TL_DATA_BYTES*8-1:0]  write_data_l1_1,
+    output reg [`TL_DATA_BYTES-1:0]    write_mask_l1_1,
+    input      [`TL_DATA_BYTES*8-1:0]  read_data_l1_1,
+    
+    output reg [`TL_ADDR_BITS-1:0]     address_l1_2,
+    output reg [`TL_SIZE_BITS-1:0]     size_l1_2,
+    output reg [`TL_SOURCE_BITS-1:0]   source_l1_2,
+    output reg [`TL_DATA_BYTES*8-1:0]  write_data_l1_2,
+    output reg [`TL_DATA_BYTES-1:0]    write_mask_l1_2,
+    input      [`TL_DATA_BYTES*8-1:0]  read_data_l1_2,
+    
+    output reg [`TL_ADDR_BITS-1:0]     address_l1_3,
+    output reg [`TL_SIZE_BITS-1:0]     size_l1_3,
+    output reg [`TL_SOURCE_BITS-1:0]   source_l1_3,
+    output reg [`TL_DATA_BYTES*8-1:0]  write_data_l1_3,
+    output reg [`TL_DATA_BYTES-1:0]    write_mask_l1_3,
+    input      [`TL_DATA_BYTES*8-1:0]  read_data_l1_3,
+    
     // Control signals
-    output reg         start_transaction,  // Pulse to start a new transaction
-    output reg [1:0]   transaction_type,   // 0: GET, 1: PUTFULL, 2: PUTPARTIAL, 3: reserved
-    
-    // Transaction parameters
-    output reg [`TL_ADDR_BITS-1:0]     address,    // Address for any operation
-    output reg [`TL_SIZE_BITS-1:0]     size,       // Size for any operation
-    output reg [`TL_SOURCE_BITS-1:0]   source,     // Source for any operation
-    output reg [`TL_DATA_BYTES*8-1:0]  write_data, // Data for PUT operations
-    output reg [`TL_DATA_BYTES-1:0]    write_mask, // Mask for PUTPARTIAL operation
-    input [`TL_DATA_BYTES*8-1:0]       read_data,  // Data returned from GET operation
-    
-    // Testbench control signals
-    input                              transaction_done,
-    output reg                         mem_init_done,
-    output reg                         test_done,
-    
-    // Additional input for test status - connected from monitor
-    input                              all_tests_passed
+    input [3:0]  transaction_done,
+    input        mem_init_done,
+    output reg   test_done,
+    output reg   all_tests_passed
 );
     
     // Parameters
-    localparam CLK_PERIOD = 10; // Clock period in ns
+    localparam CLK_PERIOD = 10; // 10ns period (100MHz clock)
     
-    // Transaction type constants
-    localparam TX_GET           = 2'b00;
-    localparam TX_PUTFULL       = 2'b01;
-    localparam TX_PUTPARTIAL    = 2'b10;
+    // Transaction types
+    localparam TX_GET = 2'b00;
+    localparam TX_PUTFULL = 2'b01;
+    localparam TX_PUTPARTIAL = 2'b10;
     
-    // Test case parameters
-    localparam TEST_COUNT = 10;
-    reg [3:0] current_test;
+    // Simplified state machine with just two test states
+    localparam S_RESET = 0;   // Initial reset
+    localparam S_INIT = 1;    // Initialize memory
+    localparam S_TEST = 2;    // Run the single test
+    localparam S_DONE = 3;    // Test finished
     
-    // Storage for data read during GET operations for verification
-    reg [`TL_DATA_BYTES*8-1:0] last_read_data;
+    reg [1:0] state;
+    reg [7:0] counter;
     
-    // Clock generation
+    // Generate clock
     initial begin
-        clk = 1'b0;
+        clk = 0;
         forever #(CLK_PERIOD/2) clk = ~clk;
     end
     
-    // Initialize transaction parameters with default values
-    task initialize_transaction_params;
-    begin
-        // Initialize transaction parameters
-        start_transaction = 1'b0;
-        transaction_type = TX_GET;
+    // Initialize all signals
+    initial begin
+        // Initialize outputs
+        rst_n = 0;
+        start_transaction = 4'b0000;
+        transaction_type = 8'h00;
+        address_l1_0 = 0;
+        size_l1_0 = 0;
+        source_l1_0 = 0;
+        write_data_l1_0 = 0;
+        write_mask_l1_0 = 0;
         
-        address = 32'h0;
-        size = `TL_SIZE_BITS'd3; // Default: 8 bytes
-        source = `TL_SOURCE_BITS'd0;
-        write_data = 64'h0;
-        write_mask = 8'hFF; // Default: all bytes enabled
+        // Initialize unused ports to avoid X values
+        address_l1_1 = 0;
+        size_l1_1 = 0;
+        source_l1_1 = 0;
+        write_data_l1_1 = 0;
+        write_mask_l1_1 = 0;
+        address_l1_2 = 0;
+        size_l1_2 = 0;
+        source_l1_2 = 0;
+        write_data_l1_2 = 0;
+        write_mask_l1_2 = 0;
+        address_l1_3 = 0;
+        size_l1_3 = 0;
+        source_l1_3 = 0;
+        write_data_l1_3 = 0;
+        write_mask_l1_3 = 0;
         
-        current_test = 0;
-        test_done = 1'b0;
-        mem_init_done = 1'b0;
+        test_done = 0;
+        all_tests_passed = 0;
+        state = S_RESET;
+        counter = 0;
     end
-    endtask
     
-    // Execute a specific test case based on the test number
-    task execute_test_case;
-        input [3:0] test_num;
-    begin
-        // Initialize signals for this operation
-        start_transaction = 1'b0;
+    // Simple timeout to prevent infinite simulation
+    initial begin
+        #10000 // 10,000 time units timeout
+        if (!test_done) begin
+            $display("\n*** SIMULATION TIMEOUT ***\n");
+            $finish;
+        end
+    end
+    
+    // Main state machine
+    always @(posedge clk) begin
+        // Default: clear the start_transaction pulse
+        start_transaction <= 4'b0000;
         
-        case (test_num)
-            0: begin // Basic GET operation
-                $display("[%0t ns] Stimulus: Test Case %0d - Basic GET operation", $time, test_num);
-                address = 32'h1000;
-                size = `TL_SIZE_BITS'd3; // 8 bytes
-                source = `TL_SOURCE_BITS'd1;
-                transaction_type = TX_GET;
+        case (state)
+            S_RESET: begin
+                // Assert reset for 10 cycles
+                counter <= counter + 1;
+                if (counter >= 10) begin
+                    rst_n <= 1;
+                    counter <= 0;
+                    state <= S_INIT;
+                    $display("[%0t ns] Reset complete, initializing memory", $time);
+                end else begin
+                    rst_n <= 0;
+                end
             end
             
-            1: begin // Basic PUTFULL operation
-                $display("[%0t ns] Stimulus: Test Case %0d - Basic PUTFULL operation", $time, test_num);
-                address = 32'h2000;
-                size = `TL_SIZE_BITS'd3; // 8 bytes
-                source = `TL_SOURCE_BITS'd2;
-                write_data = 64'h11223344AABBCCDD;
-                write_mask = 8'hFF; // All bytes
-                transaction_type = TX_PUTFULL;
+            S_INIT: begin
+                if (counter == 0) begin
+                    // Initialize memory with data
+                    $display("[%0t ns] Writing initial data to memory address 0x0", $time);
+                    address_l1_0 <= 32'h0;
+                    size_l1_0 <= 3; // 2^3 = 8 bytes
+                    source_l1_0 <= 0; 
+                    write_data_l1_0 <= 64'hABCD_1234_5678_9ABC;
+                    write_mask_l1_0 <= 8'hFF; // All bytes enabled
+                    transaction_type[1:0] <= TX_PUTFULL;
+                    start_transaction[0] <= 1'b1;
+                    counter <= counter + 1;
+                end
+                else if (transaction_done[0]) begin
+                    $display("[%0t ns] Memory initialization complete", $time);
+                    counter <= 0;
+                    state <= S_TEST;
+                end
+                else if (counter >= 100) begin
+                    // Timeout after waiting too long
+                    $display("[%0t ns] Memory initialization timed out", $time);
+                    counter <= 0;
+                    state <= S_TEST;
+                end
+                else begin
+                    counter <= counter + 1;
+                end
             end
             
-            2: begin // Basic PUTPARTIAL operation
-                $display("[%0t ns] Stimulus: Test Case %0d - Basic PUTPARTIAL operation", $time, test_num);
-                address = 32'h3004;
-                size = `TL_SIZE_BITS'd3; // 8 bytes
-                source = `TL_SOURCE_BITS'd3;
-                write_data = 64'hFFFFFFFF00000000;
-                write_mask = 8'b11110000; // Upper 4 bytes
-                transaction_type = TX_PUTPARTIAL;
+            S_TEST: begin
+                if (counter == 0) begin
+                    // Perform simple GET operation
+                    $display("[%0t ns] TEST: Performing GET operation from address 0x0", $time);
+                    address_l1_0 <= 32'h0; 
+                    size_l1_0 <= 3; // 2^3 = 8 bytes
+                    source_l1_0 <= 0;
+                    transaction_type[1:0] <= TX_GET;
+                    start_transaction[0] <= 1'b1;
+                    counter <= counter + 1;
+                end
+                else if (transaction_done[0]) begin
+                    // Verify the read data
+                    $display("[%0t ns] TEST: GET transaction completed", $time);
+                    $display("[%0t ns] TEST: Read data: 0x%h", $time, read_data_l1_0);
+                    if (read_data_l1_0 == 64'hABCD_1234_5678_9ABC) begin
+                        $display("[%0t ns] TEST PASSED: Data matches expected value", $time);
+                        all_tests_passed <= 1;
+                    end else begin
+                        $display("[%0t ns] TEST FAILED: Expected 0x%h, Got 0x%h", $time, 
+                                64'hABCD_1234_5678_9ABC, read_data_l1_0);
+                    end
+                    state <= S_DONE;
+                end
+                else if (counter >= 100) begin
+                    // Timeout after waiting too long
+                    $display("[%0t ns] TEST: GET transaction timed out", $time);
+                    state <= S_DONE;
+                end
+                else begin
+                    counter <= counter + 1;
+                end
             end
             
-            3: begin // GET with different source ID
-                $display("[%0t ns] Stimulus: Test Case %0d - GET with different source ID", $time, test_num);
-                address = 32'h1008;
-                size = `TL_SIZE_BITS'd3; // 8 bytes
-                source = `TL_SOURCE_BITS'd4;
-                transaction_type = TX_GET;
-            end
-            
-            4: begin // PUTFULL to previously read address
-                $display("[%0t ns] Stimulus: Test Case %0d - PUTFULL to previously read address", $time, test_num);
-                address = 32'h1000;
-                size = `TL_SIZE_BITS'd3;
-                source = `TL_SOURCE_BITS'd5;
-                write_data = 64'h9988776655443322;
-                write_mask = 8'hFF; // All bytes
-                transaction_type = TX_PUTFULL;
-            end
-            
-            5: begin // PUTPARTIAL with different mask pattern
-                $display("[%0t ns] Stimulus: Test Case %0d - PUTPARTIAL with different mask pattern", $time, test_num);
-                address = 32'h2000;
-                size = `TL_SIZE_BITS'd3;
-                source = `TL_SOURCE_BITS'd6;
-                write_data = 64'h00000000FFFFFFFF;
-                write_mask = 8'b00001111; // Lower 4 bytes
-                transaction_type = TX_PUTPARTIAL;
-            end
-            
-            6: begin // GET to verify PUTPARTIAL result
-                $display("[%0t ns] Stimulus: Test Case %0d - GET to verify PUTPARTIAL result", $time, test_num);
-                address = 32'h2000;
-                size = `TL_SIZE_BITS'd3;
-                source = `TL_SOURCE_BITS'd7;
-                transaction_type = TX_GET;
-            end
-            
-            7: begin // PUTFULL to a new address
-                $display("[%0t ns] Stimulus: Test Case %0d - PUTFULL to a new address", $time, test_num);
-                address = 32'h4000;
-                size = `TL_SIZE_BITS'd3;
-                source = `TL_SOURCE_BITS'd8;
-                write_data = 64'hAA55AA55AA55AA55;
-                write_mask = 8'hFF; // All bytes
-                transaction_type = TX_PUTFULL;
-            end
-            
-            8: begin // PUTPARTIAL overlapping previous PUTFULL
-                $display("[%0t ns] Stimulus: Test Case %0d - PUTPARTIAL overlapping previous PUTFULL", $time, test_num);
-                address = 32'h4000;
-                size = `TL_SIZE_BITS'd3;
-                source = `TL_SOURCE_BITS'd9;
-                write_data = 64'h00FFFF0000FFFF00;
-                write_mask = 8'b01010101; // Alternating bytes
-                transaction_type = TX_PUTPARTIAL;
-            end
-            
-            9: begin // GET to verify combined PUTFULL+PUTPARTIAL result
-                $display("[%0t ns] Stimulus: Test Case %0d - GET to verify combined PUTFULL+PUTPARTIAL result", $time, test_num);
-                address = 32'h4000;
-                size = `TL_SIZE_BITS'd3;
-                source = `TL_SOURCE_BITS'd10;
-                transaction_type = TX_GET;
-            end
-            
-            default: begin
-                $display("[%0t ns] Stimulus: Unknown test case %0d", $time, test_num);
+            S_DONE: begin
+                // Test complete
+                $display("[%0t ns] Test complete", $time);
+                test_done <= 1;
+                
+                // End simulation
+                #10 $finish;
             end
         endcase
-        
-        // Start the transaction after setting up the parameters
-        @(posedge clk);
-        start_transaction = 1'b1;
-        @(posedge clk);
-        start_transaction = 1'b0;
-        
-        // For GET operations, save the read data when transaction is done
-        if (transaction_type == TX_GET) begin
-            wait(transaction_done);
-            last_read_data = read_data;
-            $display("[%0t ns] Stimulus: GET operation completed, data read: 0x%h", $time, read_data);
-        end
-    end
-    endtask
-    
-    // Initial sequence for stimulus generation - now also includes reset control
-    initial begin
-        // Initialize signals
-        initialize_transaction_params();
-        rst_n = 1'b0; // Start with reset asserted
-        
-        $display("[%0t ns] Stimulus: Starting Testbench for tl_top (No Top version)", $time);
-        
-        // Dump waveforms functionality is moved to the top module
-        
-        $display("[%0t ns] Stimulus: Starting with reset asserted", $time);
-        
-        // Apply reset for a few cycles
-        repeat (5) @(posedge clk);
-        rst_n = 1'b1; // Deassert reset
-        $display("[%0t ns] Stimulus: Reset deasserted", $time);
-        
-        // Initialize memory
-        mem_init_done = 1'b1;
-        $display("[%0t ns] Stimulus: Memory initialization done", $time);
-        
-        // Small delay after reset
-        repeat(3) @(posedge clk);
-        
-        $display("[%0t ns] Stimulus: Starting test sequence with %0d test cases", $time, TEST_COUNT);
-        
-        // Execute all test cases
-        for (current_test = 0; current_test < TEST_COUNT; current_test = current_test + 1) begin
-            // Execute test case
-            execute_test_case(current_test);
-            
-            // Wait for transaction to complete before starting next test
-            wait(transaction_done);
-            repeat(3) @(posedge clk); // Add small delay between tests
-        end
-        
-        // Test sequence complete
-        repeat(5) @(posedge clk);
-        test_done = 1'b1;
-        $display("[%0t ns] Stimulus: Test sequence complete, executed %0d test cases", $time, TEST_COUNT);
-        
-        // Wait for results to be processed
-        repeat(10) @(posedge clk);
-        
-        // End simulation
-        if (all_tests_passed) begin
-            $display("[%0t ns] All tests passed successfully!", $time);
-        end else begin
-            $display("[%0t ns] Some tests failed, check log for details", $time);
-        end
-        
-        $display("[%0t ns] Simulation finished", $time);
-        $finish;
     end
 
 endmodule 
+

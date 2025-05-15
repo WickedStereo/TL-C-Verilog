@@ -61,10 +61,7 @@ module tl_l1_adapter (
 
     // Data path registers
     reg [`TL_DATA_BYTES*8-1:0] read_data_reg;
-    
-    // Internal control signals
-    reg capture_read_data;
-    
+
     // Parameter registers
     reg [`TL_SIZE_BITS-1:0]    reg_size;
     reg [`TL_SOURCE_BITS-1:0]  reg_source;
@@ -185,20 +182,7 @@ module tl_l1_adapter (
         endcase
     end
 
-    // // 4. Control path combinational logic - Internal control signals
-    // always @(*) begin
-    //     // Capture read data when we receive AccessAckData for a GET transaction
-    //     if (state == S_WAIT_RESP && d_valid && d_ready && 
-    //         current_tx_type == TX_GET && d_opcode == `TL_D_ACCESSACKDATA) begin
-    //         capture_read_data = 1'b1;
-    //     end
-    //     // Default value
-    //     else begin
-    //         capture_read_data = 1'b0;
-    //     end
-    // end
-
-    // 5. Output logic - TileLink signals
+    // 4. Output logic - TileLink signals
     always @(*) begin
         // Default assignments for outputs
         a_valid    = 1'b0;

@@ -7,18 +7,42 @@ module tb_tl_top;
     wire clk;
     wire rst_n;
     
-    // Control signals for L1 adapter
-    wire        start_transaction;  // Pulse to start a new transaction
-    wire [1:0]  transaction_type;   // 0: GET, 1: PUTFULL, 2: PUTPARTIAL, 3: reserved
-    wire        transaction_done;   // Pulses when transaction is complete
+    // Control signals for 4 L1 adapters
+    wire [3:0]  start_transaction;  // Pulse to start a new transaction (one bit per L1)
+    wire [7:0]  transaction_type;   // 2 bits per L1 adapter (0: GET, 1: PUTFULL, 2: PUTPARTIAL, 3: reserved)
+    wire [3:0]  transaction_done;   // Pulses when transaction is complete (one bit per L1)
     
-    // Transaction parameters
-    wire [`TL_ADDR_BITS-1:0]     address;    // Address for any operation
-    wire [`TL_SIZE_BITS-1:0]     size;       // Size for any operation
-    wire [`TL_SOURCE_BITS-1:0]   source;     // Source for any operation
-    wire [`TL_DATA_BYTES*8-1:0]  write_data; // Data for PUT operations
-    wire [`TL_DATA_BYTES-1:0]    write_mask; // Mask for PUTPARTIAL operation
-    wire [`TL_DATA_BYTES*8-1:0]  read_data;  // Data returned from GET operation
+    // Transaction parameters for L1_0
+    wire [`TL_ADDR_BITS-1:0]     address_l1_0;     // Address for L1_0 operations
+    wire [`TL_SIZE_BITS-1:0]     size_l1_0;        // Size for L1_0 operations
+    wire [`TL_SOURCE_BITS-1:0]   source_l1_0;      // Source for L1_0 operations
+    wire [`TL_DATA_BYTES*8-1:0]  write_data_l1_0;  // Data for L1_0 PUT operations
+    wire [`TL_DATA_BYTES-1:0]    write_mask_l1_0;  // Mask for L1_0 PUTPARTIAL operation
+    wire [`TL_DATA_BYTES*8-1:0]  read_data_l1_0;   // Data returned from L1_0 GET operation
+    
+    // Transaction parameters for L1_1
+    wire [`TL_ADDR_BITS-1:0]     address_l1_1;     // Address for L1_1 operations
+    wire [`TL_SIZE_BITS-1:0]     size_l1_1;        // Size for L1_1 operations
+    wire [`TL_SOURCE_BITS-1:0]   source_l1_1;      // Source for L1_1 operations
+    wire [`TL_DATA_BYTES*8-1:0]  write_data_l1_1;  // Data for L1_1 PUT operations
+    wire [`TL_DATA_BYTES-1:0]    write_mask_l1_1;  // Mask for L1_1 PUTPARTIAL operation
+    wire [`TL_DATA_BYTES*8-1:0]  read_data_l1_1;   // Data returned from L1_1 GET operation
+    
+    // Transaction parameters for L1_2
+    wire [`TL_ADDR_BITS-1:0]     address_l1_2;     // Address for L1_2 operations
+    wire [`TL_SIZE_BITS-1:0]     size_l1_2;        // Size for L1_2 operations
+    wire [`TL_SOURCE_BITS-1:0]   source_l1_2;      // Source for L1_2 operations
+    wire [`TL_DATA_BYTES*8-1:0]  write_data_l1_2;  // Data for L1_2 PUT operations
+    wire [`TL_DATA_BYTES-1:0]    write_mask_l1_2;  // Mask for L1_2 PUTPARTIAL operation
+    wire [`TL_DATA_BYTES*8-1:0]  read_data_l1_2;   // Data returned from L1_2 GET operation
+    
+    // Transaction parameters for L1_3
+    wire [`TL_ADDR_BITS-1:0]     address_l1_3;     // Address for L1_3 operations
+    wire [`TL_SIZE_BITS-1:0]     size_l1_3;        // Size for L1_3 operations
+    wire [`TL_SOURCE_BITS-1:0]   source_l1_3;      // Source for L1_3 operations
+    wire [`TL_DATA_BYTES*8-1:0]  write_data_l1_3;  // Data for L1_3 PUT operations
+    wire [`TL_DATA_BYTES-1:0]    write_mask_l1_3;  // Mask for L1_3 PUTPARTIAL operation
+    wire [`TL_DATA_BYTES*8-1:0]  read_data_l1_3;   // Data returned from L1_3 GET operation
     
     // Memory monitoring outputs from L2 adapter
     wire                              mem_write_valid;
@@ -46,18 +70,42 @@ module tb_tl_top;
         .clk                (clk),
         .rst_n              (rst_n),
         
-        // Control signals
+        // Control signals for all 4 L1 adapters
         .start_transaction  (start_transaction),
         .transaction_type   (transaction_type),
         .transaction_done   (transaction_done),
         
-        // Transaction parameters
-        .address            (address),
-        .size               (size),
-        .source             (source),
-        .write_data         (write_data),
-        .write_mask         (write_mask),
-        .read_data          (read_data),
+        // Transaction parameters for L1_0
+        .address_l1_0       (address_l1_0),
+        .size_l1_0          (size_l1_0),
+        .source_l1_0        (source_l1_0),
+        .write_data_l1_0    (write_data_l1_0),
+        .write_mask_l1_0    (write_mask_l1_0),
+        .read_data_l1_0     (read_data_l1_0),
+        
+        // Transaction parameters for L1_1
+        .address_l1_1       (address_l1_1),
+        .size_l1_1          (size_l1_1),
+        .source_l1_1        (source_l1_1),
+        .write_data_l1_1    (write_data_l1_1),
+        .write_mask_l1_1    (write_mask_l1_1),
+        .read_data_l1_1     (read_data_l1_1),
+        
+        // Transaction parameters for L1_2
+        .address_l1_2       (address_l1_2),
+        .size_l1_2          (size_l1_2),
+        .source_l1_2        (source_l1_2),
+        .write_data_l1_2    (write_data_l1_2),
+        .write_mask_l1_2    (write_mask_l1_2),
+        .read_data_l1_2     (read_data_l1_2),
+        
+        // Transaction parameters for L1_3
+        .address_l1_3       (address_l1_3),
+        .size_l1_3          (size_l1_3),
+        .source_l1_3        (source_l1_3),
+        .write_data_l1_3    (write_data_l1_3),
+        .write_mask_l1_3    (write_mask_l1_3),
+        .read_data_l1_3     (read_data_l1_3),
         
         // Memory monitoring outputs
         .mem_write_valid    (mem_write_valid),
@@ -85,13 +133,37 @@ module tb_tl_top;
         .start_transaction  (start_transaction),
         .transaction_type   (transaction_type),
         
-        // Transaction parameters
-        .address            (address),
-        .size               (size),
-        .source             (source),
-        .write_data         (write_data),
-        .write_mask         (write_mask),
-        .read_data          (read_data),
+        // Transaction parameters for L1_0
+        .address_l1_0       (address_l1_0),
+        .size_l1_0          (size_l1_0),
+        .source_l1_0        (source_l1_0),
+        .write_data_l1_0    (write_data_l1_0),
+        .write_mask_l1_0    (write_mask_l1_0),
+        .read_data_l1_0     (read_data_l1_0),
+        
+        // Transaction parameters for L1_1
+        .address_l1_1       (address_l1_1),
+        .size_l1_1          (size_l1_1),
+        .source_l1_1        (source_l1_1),
+        .write_data_l1_1    (write_data_l1_1),
+        .write_mask_l1_1    (write_mask_l1_1),
+        .read_data_l1_1     (read_data_l1_1),
+        
+        // Transaction parameters for L1_2
+        .address_l1_2       (address_l1_2),
+        .size_l1_2          (size_l1_2),
+        .source_l1_2        (source_l1_2),
+        .write_data_l1_2    (write_data_l1_2),
+        .write_mask_l1_2    (write_mask_l1_2),
+        .read_data_l1_2     (read_data_l1_2),
+        
+        // Transaction parameters for L1_3
+        .address_l1_3       (address_l1_3),
+        .size_l1_3          (size_l1_3),
+        .source_l1_3        (source_l1_3),
+        .write_data_l1_3    (write_data_l1_3),
+        .write_mask_l1_3    (write_mask_l1_3),
+        .read_data_l1_3     (read_data_l1_3),
         
         // Control signals
         .transaction_done   (transaction_done),
@@ -100,17 +172,34 @@ module tb_tl_top;
         .all_tests_passed   (all_tests_passed)
     );
     
-    // Instantiate the simplified monitor
+    // Instantiate the monitor
     tb_tl_monitor monitor (
         .clk                (clk),
         .rst_n              (rst_n),
         
-        // Transaction signals
+        // Transaction signals for all L1 adapters
         .transaction_done   (transaction_done),
         .transaction_type   (transaction_type),
-        .address            (address),
-        .write_data         (write_data),
-        .read_data          (read_data),
+        
+        // Transaction parameters for L1_0
+        .address_l1_0       (address_l1_0),
+        .write_data_l1_0    (write_data_l1_0),
+        .read_data_l1_0     (read_data_l1_0),
+        
+        // Transaction parameters for L1_1
+        .address_l1_1       (address_l1_1),
+        .write_data_l1_1    (write_data_l1_1),
+        .read_data_l1_1     (read_data_l1_1),
+        
+        // Transaction parameters for L1_2
+        .address_l1_2       (address_l1_2),
+        .write_data_l1_2    (write_data_l1_2),
+        .read_data_l1_2     (read_data_l1_2),
+        
+        // Transaction parameters for L1_3
+        .address_l1_3       (address_l1_3),
+        .write_data_l1_3    (write_data_l1_3),
+        .read_data_l1_3     (read_data_l1_3),
         
         // Control signals
         .test_done          (test_done),
