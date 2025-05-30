@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 `include "tl_pkg.vh"
 
 // L1 adapter module implementing TileLink Master interface

@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 `include "tl_pkg.vh"
 
 module tl_top (
@@ -163,7 +164,7 @@ module tl_top (
     );
 
     // Instantiate TileLink Interconnect
-    tl_interconnect interconnect (
+    tl_interconnect interconnect_inst (
         .clk        (clk),
         .rst_n      (rst_n),
         // Master Port 0 (Connects to L1)

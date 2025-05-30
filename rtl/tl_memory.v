@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 `include "tl_pkg.vh"
 
 // TileLink memory module with configurable delay
@@ -152,6 +154,11 @@ module tl_memory (
                     end else begin
                         delay_counter <= delay_counter + 1;
                     end
+                end
+                
+                default: begin
+                    // Default case for unused state values
+                    delay_counter <= 4'd0;
                 end
             endcase
         end
